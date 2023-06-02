@@ -12,10 +12,12 @@ seaborn
 pandas
 scikit-learn
 requests
+gunicorn
+joblib
 pillow==9.5.0 
 holidays==0.11.2
 cython==0.29.33
 pystan==2.19.1.1
 fbprophet
-joblib
+
 
