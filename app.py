@@ -18,6 +18,21 @@ import pandas as pd
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+
+app = Flask(__name__)
+app.config.from_object(ApplicationConfig)
+
+bcrypt = Bcrypt(app)
+CORS(app, supports_credentials=True)
+server_session = Session(app)
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
+
+
+
+
 api_key = "XNN6JYB3CUK5Z7BUP83SQ7Z53K1ID9P1HJ"
 
 # Etherscan API endpoint
@@ -41,17 +56,6 @@ data1.columns = ['ds','y']
 train_size = int(len(data1) * 0.95)
 train_data,test_data = data1[:train_size], data1[train_size:]
 
-
-app = Flask(__name__)
-app.config.from_object(ApplicationConfig)
-
-bcrypt = Bcrypt(app)
-CORS(app, supports_credentials=True)
-server_session = Session(app)
-db.init_app(app)
-
-with app.app_context():
-    db.create_all()
 
 
 
