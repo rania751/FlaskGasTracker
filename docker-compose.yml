@@ -4,17 +4,17 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - FLASK_APP_IMAGE_NAME=myflaskapp
     ports:
       - 5000:5000
     depends_on:
       - redis
+    networks:
+      - mynet
 
   redis:
     image: redis
     networks:
-      - mynetwork
+      - mynet
 
 networks:
-  mynetwork:
+  mynet:

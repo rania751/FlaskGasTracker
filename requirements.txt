@@ -6,11 +6,11 @@ flask-session
 redis
 flask-cors
 plotly
-matplotlib
-numpy
-seaborn
-pandas
-scikit-learn
+matplotlib==3.7.1
+numpy==1.24.3
+seaborn==0.12.2
+pandas==2.0.1
+scikit-learn==1.2.2
 requests
 gunicorn
 joblib
@@ -18,6 +18,6 @@ pillow==9.5.0
 holidays==0.11.2
 cython==0.29.33
 pystan==2.19.1.1
-fbprophet
+fbprophet==O.7.1
 
 
