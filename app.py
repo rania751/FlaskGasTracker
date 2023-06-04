@@ -48,7 +48,7 @@ response2 = requests.get(BlockNumber_URL, verify=False)
      
 
 
-df_info = pd.read_csv('TESTDATA.csv')
+df_info = pd.read_csv('SOFREC.csv')
 datat=df_info.copy()
 df_info.drop('current_block_number', axis=1, inplace=True)
 data1 = df_info[['current_datetime','gas_price_Gwei']]
@@ -181,7 +181,7 @@ def logout_user():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    with open('prophet_model_test_h_1.pkl', 'rb') as f:
+    with open('Bestmodel_04_mae_5.52.pkl', 'rb') as f:
        model = pickle.load(f)
 
     data = request.json   
@@ -225,7 +225,7 @@ def predict():
 
 @app.route('/predictm', methods=['POST'])
 def predictm():
-    with open('prophet_model_test_h_1.pkl', 'rb') as f:
+    with open('Bestmodel_04_mae_5.52.pkl', 'rb') as f:
        model = pickle.load(f)
 
     data = request.json   
