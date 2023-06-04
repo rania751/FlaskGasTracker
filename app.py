@@ -111,10 +111,6 @@ def get_gas_price():
     }) 
 
 
-
-        
-
-
 @app.route("/@me", methods=["GET"])
 def get_current_user():
     user_id = session.get("user_id")
@@ -209,8 +205,6 @@ def predict():
 
     nbrH=round(nbr+hours_difference)
 
-
-
     future = model.make_future_dataframe(periods=nbrH, freq='H')
     forecast_future = future[future['ds'] > current_timestamp]
 
@@ -228,10 +222,6 @@ def predict():
         'nbr':nbr,
         'dates': dates,
         'predictions': predicted_prices})
-
-
-
-
 
 @app.route('/predictm', methods=['POST'])
 def predictm():
@@ -275,8 +265,6 @@ def predictm():
         'predictions_M': predicted_prices_M,
       
         })
-
-
 
 if __name__ == "__main__":
     app.run(debug=True)
