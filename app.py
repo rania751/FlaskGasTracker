@@ -15,6 +15,10 @@ import time
 import datetime
 import urllib3
 import pandas as pd
+import sklearn
+import numpy as np
+# from fbprophet.plot import plot_components_plotly
+# from fbprophet.plot import plot_plotly
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -48,13 +52,77 @@ response2 = requests.get(BlockNumber_URL, verify=False)
      
 
 
+def calculate_mean_squared_error(actual, predicted):
+    squared_errors = np.square(actual - predicted)
+    return np.mean(squared_errors)
+
+# Function to calculate mean absolute error (MAE)
+def calculate_mean_absolute_error(actual, predicted):
+    absolute_errors = np.abs(actual - predicted)
+    return np.mean(absolute_errors)
+
+# Function to calculate root mean squared error (RMSE)
+def calculate_root_mean_squared_error(actual, predicted):
+    squared_errors = np.square(actual - predicted)
+    mean_squared_error = np.mean(squared_errors)
+    return np.sqrt(mean_squared_error)
+
+
+def MAPE(actual, forecast):
+    actual, forecast = np.array(actual), np.array(forecast)
+    return np.mean([100*abs((actual[i]-forecast[i])/actual[i]) for i in range(len(forecast)-1)])
+
+def metrics(df_train, forecast_train, df_test, forecast_test):
+    forecast_train = forecast_train[forecast_train['yhat'].notna()]
+    forecast_test = forecast_test[forecast_test['yhat'].notna()]
+
+    MAPE_metric = pd.DataFrame(index=['MAPE'],
+                               data={'Train': [MAPE(df_train['y'], forecast_train['yhat'])],
+                                     'Test': [MAPE(df_test['y'], forecast_test['yhat'])]})
+
+    
+    return pd.concat([MAPE_metric])
+
+
+
+
 df_info = pd.read_csv('SOFREC.csv')
 datat=df_info.copy()
 df_info.drop('current_block_number', axis=1, inplace=True)
 data1 = df_info[['current_datetime','gas_price_Gwei']]
-data1.columns = ['ds','y']
-train_size = int(len(data1) * 0.95)
-train_data,test_data = data1[:train_size], data1[train_size:]
+# Convert 'current_datetime' column to datetime format
+data1['current_datetime'] = pd.to_datetime(data1['current_datetime'])
+
+# Set the 'current_datetime' column as the DataFrame index
+data1.set_index('current_datetime', inplace=True)
+
+# Resample the DataFrame to one-minute intervals and take the first row of each minute
+resampled_data = data1.resample('1Min').first()
+
+resampled_data.reset_index(level=0, inplace=True)
+
+
+# Assuming 'data' is your DataFrame with columns 'ds' and 'y'
+resampled_data['current_datetime'] = pd.to_datetime(resampled_data['current_datetime'])  # Convert 'ds' column to datetime format
+
+# # Replace 0 values with NaN
+# resampled_data['gas_price_Gwei'].replace(0, float('nan'), inplace=True)
+
+# Perform linear interpolation
+resampled_data['y_interpolated'] = resampled_data['gas_price_Gwei'].interpolate(method='linear')
+
+
+resampled_data['gas_price_Gwei']=resampled_data['y_interpolated']
+resampled_data.drop('y_interpolated', axis=1, inplace=True)
+
+resampled_data=resampled_data.reset_index(drop=True)
+
+
+resampled_data.columns = ['ds','y']
+train_size = int(len(resampled_data) * 0.9)
+
+
+train_data,test_data = resampled_data[:train_size], resampled_data[train_size:]
 
 
 
@@ -183,39 +251,49 @@ def logout_user():
 def predict():
     with open('Bestmodel_04_mae_5.52.pkl', 'rb') as f:
        model = pickle.load(f)
-
+    # print("aaa")
     data = request.json   
     nbr=data['nbrint']
+    # print(nbr)
     if (nbr>180):
         return jsonify({"error": "Request Header Fields Too Large"}), 431
 
     # Assuming you have a previous date as a string
     previous_date_str = train_data['ds'].iloc[-1]
-
-    previous_date = datetime.datetime.strptime(previous_date_str, '%Y-%m-%d %H:%M:%S')
-    # Get the current timestamp
+  
+    # previous_date = datetime.datetime.strptime(previous_date_str, '%Y-%m-%d %H:%M:%S')
+   
+    # Get the current timestampQ
     current_timestamp = datetime.datetime.now()
+    # print(current_timestamp)
 
     # Calculate the time difference between the previous date and the current timestamp
-    time_difference = current_timestamp - previous_date
+    time_difference = current_timestamp - previous_date_str
+    # print(time_difference)
 
 
     # Calculate the number of hours
     hours_difference = time_difference.total_seconds() / 3600
 
     nbrH=round(nbr+hours_difference)
+    print(nbrH)
 
     future = model.make_future_dataframe(periods=nbrH, freq='H')
+    print(future)
     forecast_future = future[future['ds'] > current_timestamp]
+    print(forecast_future)
 
     # Make predictions for the future timestamps
     forecast = model.predict(forecast_future )
 
     # Access the forecasted values for the next 3 hours
     forecast_next = forecast[[ 'ds','yhat']]
+    print(forecast_next)
 
     predicted_prices = forecast_next['yhat'].values.tolist()
+    print(predicted_prices)
     dates =forecast_next['ds'].tolist()
+   
 
 
     return jsonify({
@@ -223,48 +301,88 @@ def predict():
         'dates': dates,
         'predictions': predicted_prices})
 
-@app.route('/predictm', methods=['POST'])
-def predictm():
+# @app.route('/predictm', methods=['POST'])
+# def predictm():
+#     with open('Bestmodel_04_mae_5.52.pkl', 'rb') as f:
+#        model = pickle.load(f)
+
+#     data = request.json   
+#     nbr=data['nbrintm']
+#     print(nbr)
+#     if (nbr>180):
+#         return jsonify({"error": "Request Header Fields Too Large"}), 431
+
+#     # Assuming you have a previous date as a string
+#     previous_date_str = train_data['ds'].iloc[-1]
+
+#     # previous_date = datetime.datetime.strptime(previous_date_str, '%Y-%m-%d %H:%M:%S')
+#     # Get the current timestamp
+#     current_timestamp = datetime.datetime.now()
+
+#     # Calculate the time difference between the previous date and the current timestamp
+#     time_difference = current_timestamp - previous_date_str
+
+#     mins_difference = time_difference.total_seconds() / 60
+#     print(mins_difference)
+
+#     nbrM=round(nbr+mins_difference)
+
+#     futureM = model.make_future_dataframe(periods=nbrM, freq='1min')
+#     forecast_future_M = futureM[futureM['ds'] > current_timestamp]
+
+#     forecast_M = model.predict(forecast_future_M )
+
+#     forecast_next_M = forecast_M[[ 'ds','yhat']]
+   
+#     predicted_prices_M = forecast_next_M['yhat'].values.tolist()
+#     dates_M =forecast_next_M['ds'].tolist()
+
+#     return jsonify({
+#         'nbr':nbr,
+#         'dates_M': dates_M,
+#         'predictions_M': predicted_prices_M,
+      
+#         })
+
+
+
+
+        
+
+
+
+@app.route('/eval', methods=['GET'])
+def eval():   
     with open('Bestmodel_04_mae_5.52.pkl', 'rb') as f:
        model = pickle.load(f)
 
-    data = request.json   
-    nbr=data['nbrintm']
-    print(nbr)
-    if (nbr>180):
-        return jsonify({"error": "Request Header Fields Too Large"}), 431
+    future = model.make_future_dataframe(periods=len(test_data), freq='1min')  # 6 hours of future data
+    forecast = model.predict(future)
+    forecast_next = forecast[['ds', 'yhat']]   
+    forecast_data=forecast_next[:len(train_data)]
+    forecast_test= forecast_next[len(train_data):]
+    mse=calculate_mean_squared_error(test_data['y'], forecast_test['yhat'])
+    mae=calculate_mean_absolute_error(test_data['y'], forecast_test['yhat'])
+    rmse=calculate_root_mean_squared_error(test_data['y'], forecast_test['yhat'])
+    # mape=metrics(train_data, forecast_data, test_data, forecast_test)
+    # print(mape)
+    mape_train=MAPE(train_data['y'], forecast_data['yhat'])
+    mape_test=MAPE(test_data['y'], forecast_test['yhat'])
 
-    # Assuming you have a previous date as a string
-    previous_date_str = train_data['ds'].iloc[-1]
 
-    previous_date = datetime.datetime.strptime(previous_date_str, '%Y-%m-%d %H:%M:%S')
-    # Get the current timestamp
-    current_timestamp = datetime.datetime.now()
-
-    # Calculate the time difference between the previous date and the current timestamp
-    time_difference = current_timestamp - previous_date
-
-    mins_difference = time_difference.total_seconds() / 60
-    print(mins_difference)
-
-    nbrM=round(nbr+mins_difference)
-
-    futureM = model.make_future_dataframe(periods=nbrM, freq='1min')
-    forecast_future_M = futureM[futureM['ds'] > current_timestamp]
-
-    forecast_M = model.predict(forecast_future_M )
-
-    forecast_next_M = forecast_M[[ 'ds','yhat']]
-   
-    predicted_prices_M = forecast_next_M['yhat'].values.tolist()
-    dates_M =forecast_next_M['ds'].tolist()
-
+    # fig1=plot_plotly(model ,forecast)
+    
+    # fig=plot_components_plotly(model, forecast_next)
+    # plot_data = fig.to_json()
     return jsonify({
-        'nbr':nbr,
-        'dates_M': dates_M,
-        'predictions_M': predicted_prices_M,
-      
-        })
+        "mse":mse,
+        "mae": mae,
+        "rmse": rmse,
+        "mape_train":mape_train,
+        "mape_test":mape_test,
+        # "plot_data":plot_data
+    
+    }) 
 
 if __name__ == "__main__":
     app.run(debug=True)

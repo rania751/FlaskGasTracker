@@ -1,37 +1,83 @@
-FROM continuumio/miniconda3
-
-# Install system dependencies
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends \
-       gcc \
-       libpq-dev \
-       libssl-dev \
-       libffi-dev \
-       python3-dev
-
-# Create a new Conda environment
-RUN conda create -n myenv python=3.8.16
-
-# Activate the Conda environment
-SHELL ["conda", "run", "--no-capture-output", "-n", "myenv", "/bin/bash", "-c"]
-
-# Copy requirements.txt and install Python dependencies
-COPY requirements.txt /app/requirements.txt
-WORKDIR /app
-RUN pip install --no-cache-dir -r requirements.txt
-# RUN conda install libpython m2w64-toolchain -c msys
-RUN conda update -n base -c defaults conda
-RUN conda install numpy holidays cython -c conda-forge
-RUN conda install matplotlib scipy pandas -c conda-forge
-RUN conda install pystan -c conda-forge
-RUN conda install -c anaconda ephem
-RUN conda install -c conda-forge fbprophet
-
-# Copy the rest of the application code
+FROM python:3.8.16
+RUN /usr/local/bin/python -m pip install --upgrade pip
+RUN apt-get update && apt-get install -y \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
+COPY requirements.txt /
+RUN pip install -r /requirements.txt
 COPY . /app
+WORKDIR /app
+RUN pip install -r requirements.txt
 
-# Set the command to run your Flask application
-CMD ["conda", "run", "--no-capture-output", "-n",  "myenv", "gunicorn", "--workers=4", "--bind", "0.0.0.0:5000", "app:app"]
+# Access the terminal of the container
+RUN /bin/bash
+
+# Install fbprophet (run this command in the terminal)
+RUN pip install fbprophet
+
+EXPOSE 5000
+# CMD python app.py
+CMD gunicorn --workers=4 --bind 0.0.0.0:5000 app:app  
+
+
+
+# FROM python:3.8.16
+# # Upgrade pip and setuptools
+# # RUN pip install --upgrade pip setuptools
+# # RUN pip install --upgrade pip
+# COPY requirements.txt /
+# RUN pip install -r requirements.txt
+# COPY . /app
+# WORKDIR /app
+
+# EXPOSE 5000
+
+
+# # Specify the command to run your application
+# CMD gunicorn --workers=4 --bind 0.0.0.0:5000 app:app
+
+
+
+
+
+
+
+# FROM continuumio/miniconda3
+
+# # Install system dependencies
+# RUN apt-get update \
+#     && apt-get install -y --no-install-recommends \
+#        gcc \
+#        libpq-dev \
+#        libssl-dev \
+#        libffi-dev \
+#        python3-dev
+
+# # Create a new Conda environment
+# RUN conda create -n myenv python=3.8.16
+
+# # Activate the Conda environment
+# SHELL ["conda", "run", "--no-capture-output", "-n", "myenv", "/bin/bash", "-c"]
+
+# # Copy requirements.txt and install Python dependencies
+# COPY requirements.txt /app/requirements.txt
+# WORKDIR /app
+# RUN pip install --no-cache-dir -r requirements.txt
+# # RUN conda install libpython m2w64-toolchain -c msys
+
+# RUN conda update -n base -c defaults conda
+# RUN conda install numpy holidays cython -c conda-forge
+# RUN conda install matplotlib scipy pandas -c conda-forge
+# RUN conda install pystan -c conda-forge
+# RUN conda install -c anaconda ephem
+# # RUN conda install -c conda-forge fbprophet
+# #RUN conda install -c conda-forge fbprophet=0.7.1
+# # Copy the rest of the application code
+# COPY . /app
+# EXPOSE 5000
+
+# # Set the command to run your Flask application
+# CMD ["conda", "run", "--no-capture-output", "-n",  "myenv", "gunicorn", "--workers=4", "--bind", "0.0.0.0:5000", "app:app"]
 # CMD ["python", "app.py"]
 
 # FROM continuumio/miniconda3:latest
@@ -117,26 +163,6 @@ CMD ["conda", "run", "--no-capture-output", "-n",  "myenv", "gunicorn", "--worke
 
 
 
-
-
-
-
-
-
-# # FROM python:3.8.16
-
-# # # Upgrade pip and setuptools
-# # # RUN pip install --upgrade pip setuptools
-
-# # COPY requirements.txt /
-# # RUN pip install -r /requirements.txt
-# # COPY . /app
-# # WORKDIR /app
-
-# # EXPOSE 5000
-
-# # # Specify the command to run your application
-# # CMD gunicorn --workers=4 --bind 0.0.0.0:5000 app:app
 
 # # # FROM python:3.8.16
 
