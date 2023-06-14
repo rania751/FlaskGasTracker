@@ -17,8 +17,8 @@ import urllib3
 import pandas as pd
 import sklearn
 import numpy as np
-# from fbprophet.plot import plot_components_plotly
-# from fbprophet.plot import plot_plotly
+from fbprophet.plot import plot_components_plotly
+from fbprophet.plot import plot_plotly
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -81,7 +81,7 @@ def metrics(df_train, forecast_train, df_test, forecast_test):
                                      'Test': [MAPE(df_test['y'], forecast_test['yhat'])]})
 
     
-    return pd.concat([MAPE_metric])
+    return ([MAPE_metric])
 
 
 
@@ -104,9 +104,6 @@ resampled_data.reset_index(level=0, inplace=True)
 
 # Assuming 'data' is your DataFrame with columns 'ds' and 'y'
 resampled_data['current_datetime'] = pd.to_datetime(resampled_data['current_datetime'])  # Convert 'ds' column to datetime format
-
-# # Replace 0 values with NaN
-# resampled_data['gas_price_Gwei'].replace(0, float('nan'), inplace=True)
 
 # Perform linear interpolation
 resampled_data['y_interpolated'] = resampled_data['gas_price_Gwei'].interpolate(method='linear')
@@ -251,10 +248,10 @@ def logout_user():
 def predict():
     with open('Bestmodel_04_mae_5.52.pkl', 'rb') as f:
        model = pickle.load(f)
-    # print("aaa")
+
     data = request.json   
     nbr=data['nbrint']
-    # print(nbr)
+
     if (nbr>180):
         return jsonify({"error": "Request Header Fields Too Large"}), 431
 
@@ -265,12 +262,9 @@ def predict():
    
     # Get the current timestampQ
     current_timestamp = datetime.datetime.now()
-    # print(current_timestamp)
 
     # Calculate the time difference between the previous date and the current timestamp
     time_difference = current_timestamp - previous_date_str
-    # print(time_difference)
-
 
     # Calculate the number of hours
     hours_difference = time_difference.total_seconds() / 3600
@@ -293,61 +287,13 @@ def predict():
     predicted_prices = forecast_next['yhat'].values.tolist()
     print(predicted_prices)
     dates =forecast_next['ds'].tolist()
-   
-
 
     return jsonify({
         'nbr':nbr,
         'dates': dates,
         'predictions': predicted_prices})
 
-# @app.route('/predictm', methods=['POST'])
-# def predictm():
-#     with open('Bestmodel_04_mae_5.52.pkl', 'rb') as f:
-#        model = pickle.load(f)
 
-#     data = request.json   
-#     nbr=data['nbrintm']
-#     print(nbr)
-#     if (nbr>180):
-#         return jsonify({"error": "Request Header Fields Too Large"}), 431
-
-#     # Assuming you have a previous date as a string
-#     previous_date_str = train_data['ds'].iloc[-1]
-
-#     # previous_date = datetime.datetime.strptime(previous_date_str, '%Y-%m-%d %H:%M:%S')
-#     # Get the current timestamp
-#     current_timestamp = datetime.datetime.now()
-
-#     # Calculate the time difference between the previous date and the current timestamp
-#     time_difference = current_timestamp - previous_date_str
-
-#     mins_difference = time_difference.total_seconds() / 60
-#     print(mins_difference)
-
-#     nbrM=round(nbr+mins_difference)
-
-#     futureM = model.make_future_dataframe(periods=nbrM, freq='1min')
-#     forecast_future_M = futureM[futureM['ds'] > current_timestamp]
-
-#     forecast_M = model.predict(forecast_future_M )
-
-#     forecast_next_M = forecast_M[[ 'ds','yhat']]
-   
-#     predicted_prices_M = forecast_next_M['yhat'].values.tolist()
-#     dates_M =forecast_next_M['ds'].tolist()
-
-#     return jsonify({
-#         'nbr':nbr,
-#         'dates_M': dates_M,
-#         'predictions_M': predicted_prices_M,
-      
-#         })
-
-
-
-
-        
 
 
 
@@ -364,24 +310,97 @@ def eval():
     mse=calculate_mean_squared_error(test_data['y'], forecast_test['yhat'])
     mae=calculate_mean_absolute_error(test_data['y'], forecast_test['yhat'])
     rmse=calculate_root_mean_squared_error(test_data['y'], forecast_test['yhat'])
-    # mape=metrics(train_data, forecast_data, test_data, forecast_test)
-    # print(mape)
     mape_train=MAPE(train_data['y'], forecast_data['yhat'])
     mape_test=MAPE(test_data['y'], forecast_test['yhat'])
-
-
-    # fig1=plot_plotly(model ,forecast)
+    testp=forecast_next[len(train_data):]['yhat'].values.tolist()
+    # testp=forecast_next[:]['yhat'].values.tolist()
+    testa=test_data[:]['y'].values.tolist()
+    datestest =forecast_next[len(train_data):]['ds'].values.tolist()
+    datestestall =forecast_next[:]['ds'].values.tolist()
+    datestestrain=train_data[:]['ds'].values.tolist()
+    fig1=plot_plotly(model ,forecast)
+    fornext=forecast_next['yhat'].values.tolist()
+    datta=resampled_data['y'].values.tolist()
+    train=train_data['y'].values.tolist()
     
-    # fig=plot_components_plotly(model, forecast_next)
-    # plot_data = fig.to_json()
+    print (len(fornext))
+    print (len(datta))
+
+
+    testp_data = {
+        "x": datestest,
+        "y": testp,
+        "type": "scatter",
+        "mode": "lines",
+        "marker": {"color": "blue"},
+        "name": "Test Prediction"
+    }
+
+    # Create the testa plot data
+    testa_data = {
+        "x": datestest,
+        "y": testa,
+        "type": "scatter",
+        "mode": "lines",
+        "marker": {"color": "green"},
+        "name": "Actual Values"
+    }
+
+    plottest = [testp_data, testa_data]
+
+    alldata = {
+        "x": datestestall,
+        "y": datta,
+        "type": "scatter",
+        "mode": "lines",
+        "marker": {"color": "green"},
+
+        "name": "Actual Prediction"
+    }
+
+    # Create the testa plot data
+    fordata = {
+        "x": datestestall,
+        "y": fornext,
+        "type": "scatter",
+        "mode": "lines",
+        "marker": {"color": "red"},
+        "name": "Test Values"
+    }
+    traindata = {
+        "x": datestestall,
+        "y": train,
+        "type": "scatter",
+        "mode": "lines",
+        "marker": {"color": "blue"},
+        "name": "Test Values"
+    }
+    
+
+    plotall = [alldata,fordata]
+    plotfor = [fordata]
+    # trainplott=[traindata,fordata]
+    trainplott=[traindata,fordata]
+
+
+
+    plot_data1=fig1.to_json()
+
     return jsonify({
         "mse":mse,
         "mae": mae,
         "rmse": rmse,
         "mape_train":mape_train,
         "mape_test":mape_test,
-        # "plot_data":plot_data
-    
+        "plot_data1":plot_data1,
+        "plotall": plotall,
+        "plotfor":plotfor,
+        "trainplott":trainplott,
+        "plottest": plottest,
+        "testp":testp,
+        "testa":testa,
+        "datestest":datestest,
+        
     }) 
 
 if __name__ == "__main__":

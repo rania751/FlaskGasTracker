@@ -47,7 +47,6 @@ for i in range(nb_iterations):
     current_gas_price = response.json()
 
 
-
     response = requests.get(BlockNumber_URL, verify=False)
     block_number = int(response.json()['result'], 16)
     current_block_number=block_number+1
@@ -76,3 +75,5 @@ for i in range(nb_iterations):
     # Wait for 6 seconds
     time.sleep(6)
     #i+=1
+
+    

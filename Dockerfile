@@ -14,6 +14,12 @@ RUN /bin/bash
 
 # Install fbprophet (run this command in the terminal)
 RUN pip install fbprophet
+# RUN rm -rf /root/.cache/pystan
+# # RUN python -c "import fbprophet; fbprophet.stan_backend.stan_backend.recompile_all()"
+# RUN python -c "from fbprophet.stan_backend.stan_backend import StanBackendEnum; StanBackendEnum.LIBRARY.value = StanBackendEnum.STAN.value"
+# RUN python -c "import fbprophet; fbprophet.models.PROPHET_STAN_BACKEND = fbprophet.stan_backend.stan_backend"
+
+
 
 EXPOSE 5000
 # CMD python app.py
